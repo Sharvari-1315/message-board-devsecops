@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Message Board</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>Message Board</h2>
+        <div id="messages"></div>
+
+        <form id="msgForm">
+            <input type="text" id="user" placeholder="Your name" required>
+            <div class="msg-row">
+                <input type="text" id="text" placeholder="Your message" required>
+                <button type="submit">Send</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        async function loadMessages() {
+            const res = await fetch("/api/messages");
+            const data = await res.json();
+            const msgDiv = document.getElementById("messages");
+            
+            msgDiv.innerHTML = data.map(m => 
+                `<div class="message">
+                    <b>${m.user}:</b> ${m.text}
+                    <button class="delete-btn" onclick="deleteMessage(${m.id})">❌</button>
+                </div>`
+            ).join("");
+
+            // Auto-scroll to bottom
+            msgDiv.scrollTop = msgDiv.scrollHeight;
+        }
+
+        async function deleteMessage(id) {
+            await fetch(`/api/messages/${id}`, { method: "DELETE" });
+            loadMessages();
+        }
+
+        document.getElementById("msgForm").addEventListener("submit", async e => {
+            e.preventDefault();
+            const user = document.getElementById("user").value;
+            const text = document.getElementById("text").value;
+
+            await fetch("/api/messages", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({user, text})
+            });
+
+            // Reset form and auto-focus
+            document.getElementById("msgForm").reset();
+            document.getElementById("text").focus();
+
+            loadMessages();
+        });
+
+        loadMessages();
+        setInterval(loadMessages, 5000);
+    </script>
+</body>
+</html>
+
